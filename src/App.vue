@@ -1,6 +1,11 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { useTemplateRef, reactive, ref } from 'vue'
 import { cards } from './cards/cards'
+
+const suggLeft = useTemplateRef('suggLeft')
+const suggRight = useTemplateRef('suggRight')
+
+console.log(suggLeft, suggRight)
 
 const state = reactive({
   sourceDeck: [],
@@ -32,13 +37,11 @@ function move(element) {
 
   element.class = 'active'
 
-  if (Object.keys(state.pickedCards).length === 0) {
-    state.pickedCards = element
-    return
-  }
-
   if (Object.keys(state.droppedCards).length === 0) {
     element.class = null
+    if (element.identical) {
+      element.class = 'user-card_rotated'
+    }
     state.droppedCards.push(element)
     left.value = element.left
     right.value = element.right
@@ -46,10 +49,23 @@ function move(element) {
     state.pickedCards = {}
 
     return
-  } else if (Object.keys(state.pickedCards).length !== 0) {
+  } else if (Object.keys(state.pickedCards).length === 0) {
+    state.pickedCards = element
 
+    if (element.values.includes(left.value) && element.values.includes(right.value)) {
+      suggLeft.value.classList.add('show')
+      suggRight.value.classList.add('show')
+    } else {
+      suggLeft.value.classList.remove('show')
+      suggRight.value.classList.remove('show')
+    }
+
+    return
+  } else if (Object.keys(state.pickedCards).length !== 0) {
     if (!isEqualShallow(state.pickedCards, element)) {
       state.pickedCards = element
+      suggLeft.value.classList.remove('show')
+      suggRight.value.classList.remove('show')
       return
     }
 
@@ -72,7 +88,6 @@ function move(element) {
     }
 
     if (match == 1) {
-      
       element.class = null
       if (state.pickedCards.left == leftOld) {
         console.log(1)
@@ -92,6 +107,8 @@ function move(element) {
 
       state.userCards = state.userCards.filter((item) => item.id !== element.id)
       state.pickedCards = {}
+      suggLeft.value.classList.remove('show')
+      suggRight.value.classList.remove('show')
       return
     }
   }
@@ -131,6 +148,7 @@ initGame()
     </div>
 
     <div class="drop-zone">
+      <div ref="suggLeft" class="user-card__suggest-left hiden"></div>
       <div
         v-for="element in state.droppedCards"
         class="user-card"
@@ -141,6 +159,7 @@ initGame()
         <span class="line"></span>
         <span>{{ element.right }}</span>
       </div>
+      <div ref="suggRight" class="user-card__suggest-right hiden"></div>
     </div>
 
     <!-- Карты игрока -->
@@ -186,30 +205,45 @@ initGame()
   justify-content: center;
 }
 
-.drop-placeholder {
-  color: #666;
-  font-style: italic;
-  padding: 20px;
-}
-
 .card,
 .user-card {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
   padding: 15px;
   border: 2px solid #333;
   border-radius: 8px;
   background: white;
+  z-index: 2;
   cursor: move;
   transition:
     transform 0.2s,
     box-shadow 0.2s;
 }
 
-.card.dragging,
-.user-card.dragging {
-  opacity: 0.7;
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+.user-card_rotated {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  min-width: auto;
+  padding: 15px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: white;
+  z-index: 2;
+  cursor: move;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.user-card_rotated span {
+  transform: rotate(90deg);
 }
 
 .line {
@@ -232,4 +266,67 @@ initGame()
 .rotated {
   transform: rotate(180deg);
 }
+
+.user-card__suggest-left,
+.user-card__suggest-right {
+  width: 35px;
+  height: 51px;
+  border: 1px solid;
+  border-radius: 5px;
+}
+
+.user-card__suggest-left {
+  transform: translateX(10%);
+  background-color: #d321218c;
+}
+
+.user-card__suggest-right {
+  transform: translateX(-10%);
+  background-color: #3321d38c;
+}
+
+.hiden {
+  visibility: hidden;
+}
+
+.show {
+  visibility: visible;
+}
+
+/* .grid-icon-1 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(1, 1fr);
+  grid-template-rows: repeat(1, 1fr);
+}
+.grid-icon-2 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(1, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.grid-icon-3 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(1, 1fr);
+}
+.grid-icon-4 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.grid-icon-5 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.grid-icon-6 {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+} */
 </style>
